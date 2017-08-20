@@ -71,6 +71,7 @@ var signUp = (req, res) => {
     var workflow = new (require('events').EventEmitter)();
     var errors = [];
     var message = [];
+    var token = '';
 
     workflow.on('validateParams', ()=>{
         if (!email){
@@ -127,17 +128,31 @@ var signUp = (req, res) => {
         db.query(sql, [customers], function(err, result) {
             if (err) throw err;
             message.push('Sign up successfully.');
+            
+            var data=JSON.parse(JSON.stringify(result));
+            var sign = {
+                id: data.insertId,
+                email: email,
+                role: 'customer'
+            };
+
+            token = jwt.sign(sign, secret, {
+    
+            });
+
             res.json({ 
                 result: message,
-                error: errors.length!==0 ? errors : null
+                error: errors,
+                token: token
             });
         });
     });
     
     workflow.on('errors', ()=> {
         res.json({ 
-            result: message.length!==0 && errors.length===0 ? message : null,
-            error: errors.length!==0 ? errors : null
+            result: message,
+            error: errors,
+            token: token
         });
     });
 
@@ -151,7 +166,7 @@ var listOfCustomers = (req, res) => {
             if (err) throw err;
             var customers=JSON.parse(JSON.stringify(result));
             res.json({
-                message: 'These are all our cusotmers.',
+                message: 'These are all our customers.',
                 listOfCustomers: customers
             });
         });
