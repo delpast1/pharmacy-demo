@@ -58,7 +58,6 @@ var signin = (req, res) => {
                         }
 
                         data = {
-                            id: customer[0].id,
                             email: customer[0].email,
                             address: customer[0].address,
                             fullname: customer[0].fullname,
@@ -172,7 +171,7 @@ var signUp = (req, res) => {
             };
 
             data = {
-                id: customer.insertId,
+                // id: customer.insertId,
                 email: email,
                 address: address,
                 fullname: fullname,
