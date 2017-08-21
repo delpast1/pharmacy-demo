@@ -13,7 +13,7 @@ var requireSession = (req, res, next) => {
             if (err) {
                 res.json({
                     result: null,
-                    error: 'Invalid token'
+                    errors: ['Invalid token']
                 });
             } else {
                 req.decoded = decoded;
@@ -23,7 +23,7 @@ var requireSession = (req, res, next) => {
     } else {
         res.json({
             result: null,
-            error: 'Authorization required'
+            errors: ['Authorization required']  
         });
     }
 };
@@ -37,7 +37,7 @@ router.post('/signin', customer.signin);
 router.post('/signup', customer.signUp);
 router.post('/change-password', [requireSession, customer.updatePassword]);
 router.post('/update-peronal-info', [requireSession, customer.updatePersonalInfo]);
-router.post('/check-current-password',[requireSession, customer.checkCurrentPassword]);
+// router.post('/check-current-password',[requireSession, customer.checkCurrentPassword]);
 router.get('/admin/listOfCustomers', [requireSession, customer.listOfCustomers]);
 router.get('/get-information', [requireSession, customer.getInformation]);
 module.exports = router;

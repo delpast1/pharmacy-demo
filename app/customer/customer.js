@@ -239,20 +239,30 @@ var getInformation = (req,res) => {
 }
 var updatePassword = (req, res) => {
         var id = req.decoded.id,
-            password = req.body.password,
+            currentPassword = req.body.currentPassword,
+            newPassword = req.body.newPassword,
             confirmPassword = req.body.confirmPassword;
         var workflow = new (require('events').EventEmitter)();
         var errors = [];
-        workflow.on('checkPassword',()=>{
-            if (!password || !confirmPassword) {
-                errors.push('Password required.');
-                workflow.emit('errors',errors);
-            } else if (password !== confirmPassword){
-                errors.push('These passwords don\'t match.');
-                workflow.emit('errors',errors);
+        workflow.on('validateParams',()=>{
+            if (!currentPassword){
+                errors.push('Current Password required');
+            };
+            if (!newPassword){
+                errors.push('New Password required');
+            };
+            if (!confirmPassword){
+                errors.push('Confirm Password required');
+            };
+            if (newPassword && confirmPassword && newPassword !== confirmPassword){
+                errors.push('New Password and Confirm Password does not match.')
+            };
+            if (errors.length !== 0){
+                workflow.emit('errors', errors);
             } else {
                 workflow.emit('changePassword');
             }
+            
         });
 
         workflow.on('errors', (errors)=> {
@@ -262,27 +272,36 @@ var updatePassword = (req, res) => {
         });
 
         workflow.on('changePassword', ()=> {
-            var sql = "UPDATE customers SET password = ? WHERE id = ?"
-            db.query(sql, [password, id], function(err, result) {
+            var sql = "UPDATE customers SET password = ? WHERE id = ? and password = ?";
+            db.query(sql, [newPassword, id, currentPassword], function(err, result) {
                 if (err) throw err;
+                var customer=JSON.parse(JSON.stringify(result));
+                if (!customer.affectedRows) {
+                    errors.push('Current password is wrong');
+                };
                 res.json({
                     errors: errors
                 });
+                
             });
         });
-        workflow.emit('checkPassword');
+        workflow.emit('validateParams');
 };
 
 var updatePersonalInfo = (req, res) => {
     var id = req.decoded.id,
         address = req.body.address,
         fullname = req.body.fullname,
-        phonenumber = req.body.phonenumber;
+        phonenumber = req.body.phonenumber,
+        currentPassword = req.body.currentPassword;
 
     var workflow = new (require('events').EventEmitter)();
     var errors = [];
 
     workflow.on('validateParams', ()=>{
+        if (!currentPassword){
+            errors.push('Current Password required');
+        };
         if (!address){
             errors.push('Address required');
         };
@@ -292,7 +311,6 @@ var updatePersonalInfo = (req, res) => {
         if (!phonenumber){
             errors.push('Phonenumber required');
         };
-
         if (errors.length){
             workflow.emit('error', errors);
         } else {
@@ -306,9 +324,14 @@ var updatePersonalInfo = (req, res) => {
         });
     });
     workflow.on('updateInfo', ()=> {
-        var sql = "UPDATE customers SET address = ?, fullname = ?, phonenumber = ? WHERE id = ?";
-        db.query(sql,[address, fullname, phonenumber, id], function(err, result){
+        var sql = "UPDATE customers SET address = ?, fullname = ?, phonenumber = ? WHERE id = ? and password = ?";
+        db.query(sql,[address, fullname, phonenumber, id, currentPassword], function(err, result){
             if (err) throw err;
+            var customer=JSON.parse(JSON.stringify(result));
+            if (!customer.affectedRows) {
+                errors.push('Current password is wrong');
+            };
+                
             res.json({
                 errors: errors
             });
@@ -317,45 +340,45 @@ var updatePersonalInfo = (req, res) => {
     workflow.emit('validateParams');
 };
 
-var checkCurrentPassword = (req, res) => {
-    var id = req.decoded.id,
-        currentPassword =  req.body.currentPassword;
+// var checkCurrentPassword = (req, res) => {
+//     var id = req.decoded.id,
+//         currentPassword =  req.body.currentPassword;
     
-    var errors = [],
-        rightPassword = false;
-    var workflow = new (require('events').EventEmitter)();
-    workflow.on('checkPassword',()=>{
-        if (!currentPassword) {
-            errors.push('Password required.');
-            workflow.emit('errors',errors);
-        } else {
-            workflow.emit('confirmPassword');
-        }
-    });
+//     var errors = [],
+//         rightPassword = false;
+//     var workflow = new (require('events').EventEmitter)();
+//     workflow.on('checkPassword',()=>{
+//         if (!currentPassword) {
+//             errors.push('Password required.');
+//             workflow.emit('errors',errors);
+//         } else {
+//             workflow.emit('confirmPassword');
+//         }
+//     });
 
-    workflow.on('errors', (errors)=> {
-        res.json({
-            errors: errors
-        });
-    });
-    workflow.on('confirmPassword', () => {
-        var sql = "SELECT * FROM customers WHERE id = ? and password = ?";
-        db.query(sql,[id, currentPassword],function(err, result) {
-            if (err) throw err;
-            var customer=JSON.parse(JSON.stringify(result));
-            if (!customer.length) {
-                rightPassword = false;
-            } else {
-                rightPassword = true;
-            };
-            res.json({
-                errors: errors,
-                rightPassword: rightPassword
-            });
-        });
-    });
-    workflow.emit('checkPassword');
-};
+//     workflow.on('errors', (errors)=> {
+//         res.json({
+//             errors: errors
+//         });
+//     });
+//     workflow.on('confirmPassword', () => {
+//         var sql = "SELECT * FROM customers WHERE id = ? and password = ?";
+//         db.query(sql,[id, currentPassword],function(err, result) {
+//             if (err) throw err;
+//             var customer=JSON.parse(JSON.stringify(result));
+//             if (!customer.length) {
+//                 rightPassword = false;
+//             } else {
+//                 rightPassword = true;
+//             };
+//             res.json({
+//                 errors: errors,
+//                 rightPassword: rightPassword
+//             });
+//         });
+//     });
+//     workflow.emit('checkPassword');
+// };
 exports = module.exports = {
     signin: signin,
     signUp: signUp,
@@ -363,5 +386,5 @@ exports = module.exports = {
     updatePassword: updatePassword,
     updatePersonalInfo: updatePersonalInfo,
     getInformation: getInformation,
-    checkCurrentPassword: checkCurrentPassword
+    // checkCurrentPassword: checkCurrentPassword
 }
