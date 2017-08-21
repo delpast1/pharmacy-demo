@@ -6,7 +6,6 @@ var jwt = require('jsonwebtoken');
 var signin = (req, res) => {
     var email = req.body.email,
         password= req.body.password;
-
     var errors = [];
     var token = [],
         data = {},
@@ -32,7 +31,7 @@ var signin = (req, res) => {
     });
 
     workflow.on('errors', (errors)=> {
-        res.json({ 
+        res.status(400).json({ 
             errors: errors,
             token: token
         });
@@ -47,10 +46,10 @@ var signin = (req, res) => {
                 var customer=JSON.parse(JSON.stringify(result));
 
                 if (!customer[0]) {
-                    errors= 'Customer does not exist.'; 
+                     errors.push('Customer does not exist.'); 
                 } else {
                     if (customer[0].password != password) {
-                        errors = 'Wrong password.';
+                        errors.push('Wrong password.');
                     } else {
                         if (customer[0].email !== 'admin@pharmacy.com') {
                             role = 'customer';
@@ -82,9 +81,9 @@ var signin = (req, res) => {
                     email: data.email,
                     role: role
                 };
-                token = jwt.sign(sign, secret, {
+                token.push(jwt.sign(sign, secret, {
                     
-                });
+                }));
                 res.json({
                     errors: errors,
                     userInfo: data,
@@ -180,9 +179,9 @@ var signUp = (req, res) => {
                 phonenumber: fullname,
                 role: sign.role
             };
-            token = jwt.sign(sign, secret, {
+            token.push(jwt.sign(sign, secret, {
     
-            });
+            }));
 
             res.json({ 
                 errors: errors,
