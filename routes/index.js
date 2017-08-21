@@ -37,6 +37,7 @@ router.post('/signin', customer.signin);
 router.post('/signup', customer.signUp);
 router.post('/change-password', [requireSession, customer.updatePassword]);
 router.post('/update-peronal-info', [requireSession, customer.updatePersonalInfo]);
+router.post('/check-current-password',[requireSession, customer.checkCurrentPassword]);
 router.get('/admin/listOfCustomers', [requireSession, customer.listOfCustomers]);
-router.get('/get-information', [requireSession, customer.getInformation])
+router.get('/get-information', [requireSession, customer.getInformation]);
 module.exports = router;
