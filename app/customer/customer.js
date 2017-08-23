@@ -62,7 +62,7 @@ var signin = (req, res) => {
                             email: customer[0].email,
                             address: customer[0].address,
                             fullname: customer[0].fullname,
-                            phonenumber: customer[0].fullname,
+                            phonenumber: customer[0].phonenumber,
                             role: role
                         };
                     }
