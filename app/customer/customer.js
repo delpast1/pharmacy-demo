@@ -175,7 +175,7 @@ var signUp = (req, res) => {
                 email: email,
                 address: address,
                 fullname: fullname,
-                phonenumber: fullname,
+                phonenumber: phonenumber,
                 role: sign.role
             };
             token.push(jwt.sign(sign, secret, {
