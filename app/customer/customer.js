@@ -58,6 +58,7 @@ var signin = (req, res) => {
                         }
 
                         data = {
+                            id: customer[0].id,
                             email: customer[0].email,
                             address: customer[0].address,
                             fullname: customer[0].fullname,
@@ -163,7 +164,6 @@ var signUp = (req, res) => {
             if (err) throw err;
             
             var customer=JSON.parse(JSON.stringify(result));
-            console.log(customer);
             var sign = {
                 id: customer.insertId,
                 email: email,
@@ -242,6 +242,7 @@ var updatePassword = (req, res) => {
             confirmPassword = req.body.confirmPassword;
         var workflow = new (require('events').EventEmitter)();
         var errors = [];
+        console.log(id);
         workflow.on('validateParams',()=>{
             if (!currentPassword){
                 errors.push('Current Password required');
@@ -271,9 +272,11 @@ var updatePassword = (req, res) => {
 
         workflow.on('changePassword', ()=> {
             var sql = "UPDATE customers SET password = ? WHERE id = ? and password = ?";
+            
             db.query(sql, [newPassword, id, currentPassword], function(err, result) {
                 if (err) throw err;
                 var customer=JSON.parse(JSON.stringify(result));
+                console.log(customer);
                 if (!customer.affectedRows) {
                     errors.push('Current password is wrong');
                 };
