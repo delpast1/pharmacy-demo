@@ -202,7 +202,7 @@ var signUp = (req, res) => {
 };
 
 var listOfCustomers = (req, res) => {
-    if (req.decoded.role === 'admin'){
+    // if (req.decoded.role === 'admin'){
         var sql = "SELECT * FROM customers";
         db.query(sql, function(err, result){
             if (err) throw err;
@@ -211,11 +211,11 @@ var listOfCustomers = (req, res) => {
                 listOfCustomers: customers
             });
         });
-    } else {
-        res.json({
-            errors: ['You are not admin.']
-        });
-    }
+    // } else {
+    //     res.json({
+    //         errors: ['You are not admin.']
+    //     });
+    // }
 };
 
 var getInformation = (req,res) => {
