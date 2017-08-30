@@ -62,8 +62,8 @@ var newOrder = (req, res) => {
     });
 
     workflow.on('addOrder', () => {
-        var order = [[customerId, date]];
-        var sql = "INSERT INTO drugorder (customer_id, date) VALUES ?";
+        var order = [[customerId, date, 0]];
+        var sql = "INSERT INTO drugorder (customer_id, date, total_price) VALUES ?";
         db.query(sql, [order], function(err, result) {
             if (err) throw err;
             var order = JSON.parse(JSON.stringify(result));
