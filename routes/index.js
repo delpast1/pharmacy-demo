@@ -14,7 +14,6 @@ var requireSession = (req, res, next) => {
         jwt.verify(token, secret, (err, decoded) => {
             if (err) {
                 res.json({
-                    result: null,
                     errors: ['Invalid token']
                 });
             } else {
@@ -24,7 +23,6 @@ var requireSession = (req, res, next) => {
         });
     } else {
         res.json({
-            result: null,
             errors: ['Authorization required']  
         });
     }
@@ -45,8 +43,35 @@ var requireAdmin = (req, res, next) => {
                     next();
                 } else {
                     res.json({
-                        result: null,
                         errors: ['Role Admin required']  
+                    });
+                }
+                
+            }
+        });
+    } else {
+        res.json({
+            errors: ['Authorization required']  
+        });
+    }
+};
+
+var requireCustomer = (req, res, next) => {
+    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+
+    if (token) {
+        jwt.verify(token, secret, (err, decoded) => {
+            if (err) {
+                res.json({
+                    errors: ['Invalid token']
+                });
+            } else {
+                if (decoded.role === 'customer'){
+                    req.decoded = decoded;
+                    next();
+                } else {
+                    res.json({
+                        errors: ['Only for customer.']  
                     });
                 }
                 
@@ -73,6 +98,10 @@ router.post('/update-peronal-info', [requireSession, customer.updatePersonalInfo
 router.get('/get-information', [requireSession, customer.getInformation]);
     //drug table
 router.post('/get-drug', [drug.getDrug]);
+    // Order
+router.post('/new-order', [requireCustomer, order.newOrder]);
+router.get('/get-order-history', [requireCustomer, order.getOrderHistory]);
+router.post('/get-detail-order', [requireCustomer, order.getDetailOfOrderByCustomer]);
 
 //----------------------------------------------------------------
 
@@ -85,8 +114,8 @@ router.post('/admin/add-new-drug', [requireAdmin, drug.addDrug]);
 router.post('/admin/update-drug', [requireAdmin, drug.updateDrug]);
 router.post('/admin/delete-drug', [requireAdmin, drug.deleteDrug]);
     //Order
-router.post('/new-order', [requireSession, order.newOrder]);
 router.post('/admin/get-order', [requireAdmin, order.getDetailOfOrder]);
+router.get('/admin/get-all-orders', [requireAdmin, order.getAllOrders]);
 
 //----------------------------------------------------------------
 //Router

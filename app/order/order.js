@@ -123,7 +123,7 @@ var getOrderHistory = (req, res) => {
     });
 }
 
-//
+// for admin
 var getDetailOfOrder = (req, res) => {
     var orderId = req.body.orderId;
     var workflow = new (require('events').EventEmitter)();
@@ -164,11 +164,59 @@ var getDetailOfOrder = (req, res) => {
     }
 }
 
+var getDetailOfOrderByCustomer = (req, res) => {
+    var orderId = req.body.orderId,
+        customerId = req.decoded.id;
+    var workflow = new (require('events').EventEmitter)();
+
+    if (!orderId) {
+        res.json({
+            errors: ['Order number required.']
+        });
+    } else {
+        var sql = "SELECT * FROM drugorder WHERE id = ? and customer_id = ?";
+        var sql2 = "SELECT id_drug, quantity, unit_price FROM orderdetail WHERE id_order = ?";
+
+        workflow.on('getOrder', () => {
+            db.query(sql, [orderId, customerId], function(err, result){
+                if (err) throw err;
+                var order = JSON.parse(JSON.stringify(result));
+                if (!order[0]) {
+                    res.json({
+                        errors: ['This is not your order.']
+                    })
+                } else {
+                    workflow.emit('getOrderDetail', order);
+                }  
+            });
+        });
+        workflow.on('getOrderDetail', (order) => {
+            db.query(sql2, [orderId], function(err, result){
+                if (err) throw err;
+                var orderDetail = JSON.parse(JSON.stringify(result));
+                workflow.emit('response', order, orderDetail);
+            });
+        });
+        workflow.on('response', (order, orderDetail) => {
+            
+            res.json({
+                orderNumber: order[0].id,
+                customerId: order[0].customer_id,
+                date: order[0].date.toString(),
+                totalPrice: order[0].total_price,
+                drugs: orderDetail
+            })
+        });
+        workflow.emit('getOrder');
+    }
+}
+
 
 exports = module.exports = {
     newOrder: newOrder,
     getAllOrders: getAllOrders,
     getDetailOfOrder: getDetailOfOrder,
-    getOrderHistory: getOrderHistory
+    getOrderHistory: getOrderHistory,
+    getDetailOfOrderByCustomer: getDetailOfOrderByCustomer
 
 }
