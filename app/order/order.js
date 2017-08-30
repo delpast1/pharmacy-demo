@@ -34,9 +34,7 @@ var newOrder = (req, res) => {
             db.query(sql, [drug.id], function(err,result){
                 var id = drug.id;
                 if (err) throw err;
-                if (result.length === 0) {
-                    errors.push(id);
-                } else {
+                if (result.length !== 0) {
                     var trueDrug = JSON.parse(JSON.stringify(result));
 
                     orderDetail.push({
@@ -48,9 +46,11 @@ var newOrder = (req, res) => {
             });
         };
 
-        if (errors.length){
+        if (errors.length === 0){
+            errors.push('Order invalid.')
             workflow.emit('errors', errors);
         } else {
+            console.log('check');
             workflow.emit('addOrder');
         };
     });
