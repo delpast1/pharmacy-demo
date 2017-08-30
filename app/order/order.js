@@ -140,7 +140,13 @@ var getDetailOfOrder = (req, res) => {
             db.query(sql, [orderId], function(err, result){
                 if (err) throw err;
                 var order = JSON.parse(JSON.stringify(result));
-                workflow.emit('getOrderDetail', order);
+                if (!order[0]) {
+                    res.json({
+                        errors: ['This order is not defined.']
+                    })
+                } else {
+                    workflow.emit('getOrderDetail', order);
+                }  
             });
         });
         workflow.on('getOrderDetail', (order) => {

@@ -242,7 +242,6 @@ var updatePassword = (req, res) => {
             confirmPassword = req.body.confirmPassword;
         var workflow = new (require('events').EventEmitter)();
         var errors = [];
-        console.log(id);
         workflow.on('validateParams',()=>{
             if (!currentPassword){
                 errors.push('Current Password required');
@@ -276,7 +275,6 @@ var updatePassword = (req, res) => {
             db.query(sql, [newPassword, id, currentPassword], function(err, result) {
                 if (err) throw err;
                 var customer=JSON.parse(JSON.stringify(result));
-                console.log(customer);
                 if (!customer.affectedRows) {
                     errors.push('Current password is wrong');
                 };
