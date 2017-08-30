@@ -32,9 +32,10 @@ var newOrder = (req, res) => {
             var sql = "SELECT * FROM drug where id = ?";
             var drug = drugs[i];
             db.query(sql, [drug.id], function(err,result){
+                var id = drug.id;
                 if (err) throw err;
-                if (!result) {
-                    errors.push(drugs[i].id);
+                if (result.length === 0) {
+                    errors.push(id);
                 } else {
                     var trueDrug = JSON.parse(JSON.stringify(result));
 
@@ -84,8 +85,6 @@ var newOrder = (req, res) => {
     });
 
     workflow.on('totalPrice', (totalPrice, orderId) => {
-        console.log(totalPrice);
-        console.log(orderId);
         var sql = "UPDATE drugorder SET total_price = ? WHERE id = ?";
         db.query(sql, [totalPrice, orderId], function(err, result){
             if (err) throw err;
