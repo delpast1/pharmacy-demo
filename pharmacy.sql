@@ -28,32 +28,6 @@ SET time_zone = "+00:00";
 -- Cấu trúc bảng cho bảng `customers`
 --
 
-CREATE TABLE `customers` (
-  `id` int(11) NOT NULL,
-  `email` varchar(255) DEFAULT NULL,
-  `password` varchar(255) DEFAULT NULL,
-  `address` varchar(255) DEFAULT NULL,
-  `fullname` varchar(255) DEFAULT NULL,
-  `phonenumber` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
---
--- Đang đổ dữ liệu cho bảng `customers`
---
-
-INSERT INTO `customers` (`id`, `email`, `password`, `address`, `fullname`, `phonenumber`) VALUES
-(1, 'admin@pharmacy.com', 'lamquang', '1', '2', '3'),
-(4, 'lamquanguit@gmail.com', 'lamquang12', 'Sài Gòn', 'Lâm Quang', '1346987654'),
-(5, 'lamquang123@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '0963225057'),
-(6, 'lamquang1234@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '0963225057'),
-(7, 'lamquang12345@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '0963225057'),
-(8, 'lamquang123456@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '0963225057'),
-(9, 'lamquang1234567@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '0963225057'),
-(10, 'lamquang1234568@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '0963225057'),
-(11, 'lamquang2@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '096322505712'),
-(12, 'lamquang3@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '096322505712'),
-(13, 'lamquang4@gmail.com', 'lamquang123', 'H? Chí Minh', 'Lâm Quang', '096322505712');
-
 -- --------------------------------------------------------
 
 --
@@ -83,7 +57,7 @@ CREATE TABLE `drug` (
 
 CREATE TABLE `drugorder` (
   `id` int(11) NOT NULL,
-  `customer` varchar(100) NOT NULL,
+  `customer_id` varchar(100) NOT NULL,
   `date` date NOT NULL,
   `total_price` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -109,8 +83,6 @@ CREATE TABLE `orderdetail` (
 --
 -- Chỉ mục cho bảng `customers`
 --
-ALTER TABLE `customers`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- Chỉ mục cho bảng `drug`
@@ -137,13 +109,12 @@ ALTER TABLE `orderdetail`
 --
 -- AUTO_INCREMENT cho bảng `customers`
 --
-ALTER TABLE `customers`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
 --
 -- AUTO_INCREMENT cho bảng `drug`
 --
 ALTER TABLE `drug`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT cho bảng `drugorder`
 --

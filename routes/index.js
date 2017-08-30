@@ -84,8 +84,9 @@ router.get('/admin/list-of-drug', [requireAdmin, drug.getListOfDrug]);
 router.post('/admin/add-new-drug', [requireAdmin, drug.addDrug]);
 router.post('/admin/update-drug', [requireAdmin, drug.updateDrug]);
 router.post('/admin/delete-drug', [requireAdmin, drug.deleteDrug]);
-
+    //Order
 router.post('/new-order', [requireSession, order.newOrder]);
+router.post('/admin/get-order', [requireAdmin, order.getDetailOfOrder]);
 
 //----------------------------------------------------------------
 //Router
