@@ -31,8 +31,10 @@ var newOrder = (req, res) => {
         for(var i = 0; i < drugs.length; i++){
             var sql = "SELECT * FROM drug where id = ?";
             var drug = drugs[i];
-            db.query(sql, [drug.id], function(err,result){
+            db.query(sql, [drug.id, i, drugs.length], function(err,result){
                 var id = drug.id;
+                var flat = i;
+                var length = drugs.length;
                 if (err) throw err;
                 if (result.length !== 0) {
                     var trueDrug = JSON.parse(JSON.stringify(result));
@@ -42,17 +44,24 @@ var newOrder = (req, res) => {
                         quantity: drug.quantity,
                         price: trueDrug[0].price
                     });
+                } else {
+                    errors.push(id);
                 }
+                // console.log('orderDetail: ' + orderDetail);
+                // console.log('errors: ' + errors);
+                // console.log('flat: '+flat);
+                // console.log('length: '+length);
+                
+                
             });
         };
 
-        if (errors.length === 0){
-            errors.push('Order invalid.')
+        if (errors.length !== 0){
             workflow.emit('errors', errors);
         } else {
-            console.log('check');
             workflow.emit('addOrder');
         };
+        
     });
 
     workflow.on('errors', (errors)=> {

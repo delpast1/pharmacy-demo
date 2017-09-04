@@ -109,7 +109,7 @@ router.post('/get-detail-order', [requireCustomer, order.getDetailOfOrderByCusto
     // customers table
 router.get('/admin/listOfCustomers', [requireAdmin, customer.listOfCustomers]);
     // drug table
-router.get('/admin/list-of-drug', [requireAdmin, drug.getListOfDrug]);
+router.get('/list-of-drug', [drug.getListOfDrug]);
 router.post('/admin/add-new-drug', [requireAdmin, drug.addDrug]);
 router.post('/admin/update-drug', [requireAdmin, drug.updateDrug]);
 router.post('/admin/delete-drug', [requireAdmin, drug.deleteDrug]);
