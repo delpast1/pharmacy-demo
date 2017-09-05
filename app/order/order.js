@@ -28,12 +28,12 @@ var newOrder = (req, res) => {
     });
 
     workflow.on('checkOrder', () => {
+        var flat = 0;
         for(var i = 0; i < drugs.length; i++){
             var sql = "SELECT * FROM drug where id = ?";
             var drug = drugs[i];
-            db.query(sql, [drug.id, i, drugs.length], function(err,result){
-                var id = drug.id;
-                var flat = i;
+            db.query(sql, [drug.id, drugs.length], function(err,result){
+                flat++;
                 var length = drugs.length;
                 if (err) throw err;
                 if (result.length !== 0) {
@@ -45,22 +45,20 @@ var newOrder = (req, res) => {
                         price: trueDrug[0].price
                     });
                 } else {
-                    errors.push(id);
+                    errors.push(flat-1);
                 }
-                // console.log('orderDetail: ' + orderDetail);
-                // console.log('errors: ' + errors);
-                // console.log('flat: '+flat);
-                // console.log('length: '+length);
-                
+                if (flat === length) {
+                    if (errors.length !== 0){
+                        workflow.emit('errors', errors);
+                    } else {
+                        workflow.emit('addOrder');
+                    };
+                }
                 
             });
         };
 
-        if (errors.length !== 0){
-            workflow.emit('errors', errors);
-        } else {
-            workflow.emit('addOrder');
-        };
+        
         
     });
 
