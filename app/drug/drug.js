@@ -11,16 +11,19 @@ var getDrug = (req,res) => {
         });
     } else {
         var sql = "SELECT * FROM drug WHERE id = ?";
-        db.query(sql,[drugId], function(err, result){
-            if (err) throw err;
-            var drug=JSON.parse(JSON.stringify(result));
-            var errors = [];
-            if (!drug[0]) {
-                errors.push('Drug does not exist.'); 
-            }
-            res.json({
-                errors: errors,
-                drug: drug[0]
+        db.getConnection((err, connection) => {
+            connection.query(sql,[drugId], function(err, result){
+                connection.destroy();
+                if (err) throw err;
+                var drug=JSON.parse(JSON.stringify(result));
+                var errors = [];
+                if (!drug[0]) {
+                    errors.push('Drug does not exist.'); 
+                }
+                res.json({
+                    errors: errors,
+                    drug: drug[0]
+                });
             });
         });
     }
@@ -29,13 +32,23 @@ var getDrug = (req,res) => {
 //
 var getListOfDrug = (req, res) => {
     var sql = "SELECT * FROM drug";
-    db.query(sql, function(err, result){
-    if (err) throw err;
-        var drugs=JSON.parse(JSON.stringify(result));
-        res.json({
-            listOfDrug: drugs
+    db.getConnection((err, connection) => {
+        connection.query(sql, function(err, result){
+            connection.destroy();
+            if (err) throw err;
+            var drugs=JSON.parse(JSON.stringify(result));
+            res.json({
+                listOfDrug: drugs
+            });
         });
     });
+    // db.query(sql, function(err, result){
+    //     if (err) throw err;
+    //     var drugs=JSON.parse(JSON.stringify(result));
+    //     res.json({
+    //         listOfDrug: drugs
+    //     });
+    // });
 };
 
 // 
@@ -91,13 +104,21 @@ var addDrug = (req, res) => {
         var drug = [[name, instructions, formula, contraindication, sideEffect, howToUse, price]];
         var sql = "INSERT INTO drug (name, instructions, formula, contraindication, side_effect, how_to_use,"+
         " price) VALUES ?";
-
-        db.query(sql, [drug], function(err, result) {
-            if (err) throw err;
-            res.json({ 
-                errors: err
+        db.getConnection((err, connection) => {
+            connection.query(sql, [drug], function(err, result) {
+                connection.destroy();
+                if (err) throw err;
+                res.json({ 
+                    errors: err
+                });
             });
         });
+        // db.query(sql, [drug], function(err, result) {
+        //     if (err) throw err;
+        //     res.json({ 
+        //         errors: err
+        //     });
+        // });
     });
 
     workflow.emit('validateParams');
@@ -157,17 +178,31 @@ var updateDrug = (req, res) => {
     workflow.on('updateDrug', ()=> {
         var sql = "UPDATE drug SET name = ?, instructions = ?, formula = ?, contraindication = ?,"+
         " side_effect = ?, how_to_use = ?, price = ? WHERE id = ?";
-        db.query(sql,[name, instructions, formula, contraindication, sideEffect, howToUse, price, drugId], function(err, result){
-            if (err) throw err;
-            var drug=JSON.parse(JSON.stringify(result));
-            if (!drug.affectedRows) {
-                errors.push('Drug is not defined.')
-            };
-                
-            res.json({
-                errors: errors
+        db.getConnection((err, connection) =>{
+            connection.query(sql,[name, instructions, formula, contraindication, sideEffect, howToUse, price, drugId], function(err, result){
+                connection.destroy();
+                if (err) throw err;
+                var drug=JSON.parse(JSON.stringify(result));
+                if (!drug.affectedRows) {
+                    errors.push('Drug is not defined.')
+                };
+                    
+                res.json({
+                    errors: errors
+                });
             });
         });
+        // db.query(sql,[name, instructions, formula, contraindication, sideEffect, howToUse, price, drugId], function(err, result){
+        //     if (err) throw err;
+        //     var drug=JSON.parse(JSON.stringify(result));
+        //     if (!drug.affectedRows) {
+        //         errors.push('Drug is not defined.')
+        //     };
+                
+        //     res.json({
+        //         errors: errors
+        //     });
+        // });
     });
     workflow.emit('validateParams');
 };
@@ -181,12 +216,21 @@ var deleteDrug = (req, res) => {
         });
     } else {
         var sql = "DELETE FROM drug WHERE id = ?";
-        db.query(sql, [drugId], function(err, result) {
-            if (err) throw err;
-            res.json({
-                errors: []
+        db.getConnection((err, connection) => {
+            connection.query(sql, [drugId], function(err, result) {
+                connection.destroy();
+                if (err) throw err;
+                res.json({
+                    errors: []
+                });
             });
-        });
+        })
+        // db.query(sql, [drugId], function(err, result) {
+        //     if (err) throw err;
+        //     res.json({
+        //         errors: []
+        //     });
+        // });
     }
 }
 

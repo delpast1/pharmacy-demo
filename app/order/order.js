@@ -32,30 +32,58 @@ var newOrder = (req, res) => {
         for(var i = 0; i < drugs.length; i++){
             var sql = "SELECT * FROM drug where id = ?";
             var drug = drugs[i];
-            db.query(sql, [drug.id, drugs.length], function(err,result){
-                flat++;
-                var length = drugs.length;
-                if (err) throw err;
-                if (result.length !== 0) {
-                    var trueDrug = JSON.parse(JSON.stringify(result));
-
-                    orderDetail.push({
-                        drugId: trueDrug[0].id,
-                        quantity: drug.quantity,
-                        price: trueDrug[0].price
-                    });
-                } else {
-                    errors.push(flat-1);
-                }
-                if (flat === length) {
-                    if (errors.length !== 0){
-                        workflow.emit('errors', errors);
+            // db.getConnection((err, connection) => {
+                db.query(sql, [drug.id], function(err,result){
+                    flat++;  
+                    var length = drugs.length;
+                    // connection.destroy();
+                    
+                    if (err) throw err;
+                    if (result.length !== 0) {
+                        var trueDrug = JSON.parse(JSON.stringify(result));
+                        
+                        orderDetail.push({
+                            drugId: trueDrug[0].id,
+                            quantity: drug.quantity,
+                            price: trueDrug[0].price
+                        });
                     } else {
-                        workflow.emit('addOrder');
-                    };
-                }
+                        errors.push(flat-1);
+                    }
+                    if (flat === length) {
+                        if (errors.length !== 0){
+                            workflow.emit('errors', errors);
+                        } else {
+                            workflow.emit('addOrder');
+                        };
+                    }
+                });
+            // }); 
+            // setTimeout(()=> {console.log('check');}, 3000);
+            // db.query(sql, [drug.id, drugs.length], function(err,result){
+            //     flat++;
+            //     var length = drugs.length;
+            //     if (err) throw err;
+            //     if (result.length !== 0) {
+            //         var trueDrug = JSON.parse(JSON.stringify(result));
+
+            //         orderDetail.push({
+            //             drugId: trueDrug[0].id,
+            //             quantity: drug.quantity,
+            //             price: trueDrug[0].price
+            //         });
+            //     } else {
+            //         errors.push(flat-1);
+            //     }
+            //     if (flat === length) {
+            //         if (errors.length !== 0){
+            //             workflow.emit('errors', errors);
+            //         } else {
+            //             workflow.emit('addOrder');
+            //         };
+            //     }
                 
-            });
+            // });
         };
 
         
@@ -71,11 +99,19 @@ var newOrder = (req, res) => {
     workflow.on('addOrder', () => {
         var order = [[customerId, date, 0]];
         var sql = "INSERT INTO drugorder (customer_id, date, total_price) VALUES ?";
-        db.query(sql, [order], function(err, result) {
-            if (err) throw err;
-            var order = JSON.parse(JSON.stringify(result));
-            workflow.emit('addOrderDetail', order.insertId);
+        db.getConnection((err, connection) => {
+            connection.query(sql, [order], function(err, result) {
+                connection.destroy();
+                if (err) throw err;
+                var order = JSON.parse(JSON.stringify(result));
+                workflow.emit('addOrderDetail', order.insertId);
+            });
         });
+        // db.query(sql, [order], function(err, result) {
+        //     if (err) throw err;
+        //     var order = JSON.parse(JSON.stringify(result));
+        //     workflow.emit('addOrderDetail', order.insertId);
+        // });
     });
 
     workflow.on('addOrderDetail', (orderId) => {
@@ -83,9 +119,15 @@ var newOrder = (req, res) => {
             var sql = "INSERT INTO orderdetail (id_order, id_drug, quantity, unit_price) VALUES (?, ?, ?, ?)";
             var detail = orderDetail[i];
             totalPrice += detail.quantity*detail.price;
-            db.query(sql, [orderId, detail.drugId, detail.quantity, detail.price], function(err, result) {
-                if (err) throw err;
-            });
+            // db.getConnection((err, connection) => {
+            //     console.log(detail);
+                db.query(sql, [orderId, detail.drugId, detail.quantity, detail.price], function(err, result) {
+                    if (err) throw err;
+                });
+            // });
+            // db.query(sql, [orderId, detail.drugId, detail.quantity, detail.price], function(err, result) {
+            //     if (err) throw err;
+            // });
         };
 
         workflow.emit('totalPrice', totalPrice, orderId);
@@ -93,12 +135,21 @@ var newOrder = (req, res) => {
 
     workflow.on('totalPrice', (totalPrice, orderId) => {
         var sql = "UPDATE drugorder SET total_price = ? WHERE id = ?";
-        db.query(sql, [totalPrice, orderId], function(err, result){
-            if (err) throw err;
-            res.json({
-                errors: errors
+        db.getConnection((err, connection) => {
+            connection.query(sql, [totalPrice, orderId], function(err, result){
+                connection.destroy();
+                if (err) throw err;
+                res.json({
+                    errors: errors
+                });
             });
         });
+        // db.query(sql, [totalPrice, orderId], function(err, result){
+        //     if (err) throw err;
+        //     res.json({
+        //         errors: errors
+        //     });
+        // });
     });
     
     workflow.emit('validateParams');
@@ -107,26 +158,46 @@ var newOrder = (req, res) => {
 // for admin
 var getAllOrders = (req, res) => {
     var sql = "SELECT * FROM drugorder";
-    db.query(sql, function(err, result){
-    if (err) throw err;
-        var drugorders=JSON.parse(JSON.stringify(result));
-        res.json({
-            allOrder: drugorders
-        });
+    db.getConnection((err, connection) => {
+        connection.query(sql, function(err, result){
+            connection.destroy();
+            if (err) throw err;
+                var drugorders=JSON.parse(JSON.stringify(result));
+                res.json({
+                    allOrder: drugorders
+                });
+            });
     });
+    // db.query(sql, function(err, result){
+    // if (err) throw err;
+    //     var drugorders=JSON.parse(JSON.stringify(result));
+    //     res.json({
+    //         allOrder: drugorders
+    //     });
+    // });
 }
 
 //for Customer
 var getOrderHistory = (req, res) => {
     var customerId = req.decoded.id;
     var sql = "SELECT * FROM drugorder WHERE customer_id = ?";
-    db.query(sql,[customerId] , function(err, result){
-        if (err) throw err;
-        var drugorders=JSON.parse(JSON.stringify(result));
-        res.json({
-            allOrder: drugorders
+    db.getConnection((err, connection) => {
+        connection.query(sql,[customerId] , function(err, result){
+            connection.destroy();
+            if (err) throw err;
+            var drugorders=JSON.parse(JSON.stringify(result));
+            res.json({
+                allOrder: drugorders
+            });
         });
     });
+    // db.query(sql,[customerId] , function(err, result){
+    //     if (err) throw err;
+    //     var drugorders=JSON.parse(JSON.stringify(result));
+    //     res.json({
+    //         allOrder: drugorders
+    //     });
+    // });
 }
 
 // for admin
@@ -143,24 +214,46 @@ var getDetailOfOrder = (req, res) => {
         var sql2 = "SELECT id_drug, quantity, unit_price FROM orderdetail WHERE id_order = ?";
 
         workflow.on('getOrder', () => {
-            db.query(sql, [orderId], function(err, result){
-                if (err) throw err;
-                var order = JSON.parse(JSON.stringify(result));
-                if (!order[0]) {
-                    res.json({
-                        errors: ['This order is not defined.']
-                    })
-                } else {
-                    workflow.emit('getOrderDetail', order);
-                }  
+            db.getConnection((err, connection) => {
+                connection.query(sql, [orderId], function(err, result){
+                    connection.destroy();
+                    if (err) throw err;
+                    var order = JSON.parse(JSON.stringify(result));
+                    if (!order[0]) {
+                        res.json({
+                            errors: ['This order is not defined.']
+                        })
+                    } else {
+                        workflow.emit('getOrderDetail', order);
+                    }  
+                });
             });
+            // db.query(sql, [orderId], function(err, result){
+            //     if (err) throw err;
+            //     var order = JSON.parse(JSON.stringify(result));
+            //     if (!order[0]) {
+            //         res.json({
+            //             errors: ['This order is not defined.']
+            //         })
+            //     } else {
+            //         workflow.emit('getOrderDetail', order);
+            //     }  
+            // });
         });
         workflow.on('getOrderDetail', (order) => {
-            db.query(sql2, [orderId], function(err, result){
-                if (err) throw err;
-                var orderDetail = JSON.parse(JSON.stringify(result));
-                workflow.emit('response', order, orderDetail);
+            db.getConnection((err, connection) => {
+                connection.query(sql2, [orderId], function(err, result){
+                    connection.destroy();
+                    if (err) throw err;
+                    var orderDetail = JSON.parse(JSON.stringify(result));
+                    workflow.emit('response', order, orderDetail);
+                });
             });
+            // db.query(sql2, [orderId], function(err, result){
+            //     if (err) throw err;
+            //     var orderDetail = JSON.parse(JSON.stringify(result));
+            //     workflow.emit('response', order, orderDetail);
+            // });
         });
         workflow.on('response', (order, orderDetail) => {
             
@@ -190,24 +283,46 @@ var getDetailOfOrderByCustomer = (req, res) => {
         var sql2 = "SELECT id_drug, quantity, unit_price FROM orderdetail WHERE id_order = ?";
 
         workflow.on('getOrder', () => {
-            db.query(sql, [orderId, customerId], function(err, result){
-                if (err) throw err;
-                var order = JSON.parse(JSON.stringify(result));
-                if (!order[0]) {
-                    res.json({
-                        errors: ['This is not your order.']
-                    })
-                } else {
-                    workflow.emit('getOrderDetail', order);
-                }  
+            db.getConnection((err, connection) => {
+                connection.query(sql, [orderId, customerId], function(err, result){
+                    connection.destroy();
+                    if (err) throw err;
+                    var order = JSON.parse(JSON.stringify(result));
+                    if (!order[0]) {
+                        res.json({
+                            errors: ['This is not your order.']
+                        })
+                    } else {
+                        workflow.emit('getOrderDetail', order);
+                    }  
+                });
             });
+            // db.query(sql, [orderId, customerId], function(err, result){
+            //     if (err) throw err;
+            //     var order = JSON.parse(JSON.stringify(result));
+            //     if (!order[0]) {
+            //         res.json({
+            //             errors: ['This is not your order.']
+            //         })
+            //     } else {
+            //         workflow.emit('getOrderDetail', order);
+            //     }  
+            // });
         });
         workflow.on('getOrderDetail', (order) => {
-            db.query(sql2, [orderId], function(err, result){
-                if (err) throw err;
-                var orderDetail = JSON.parse(JSON.stringify(result));
-                workflow.emit('response', order, orderDetail);
+            db.getConnection((err, connection) => {
+                connection.query(sql2, [orderId], function(err, result){
+                    connection.destroy();
+                    if (err) throw err;
+                    var orderDetail = JSON.parse(JSON.stringify(result));
+                    workflow.emit('response', order, orderDetail);
+                });
             });
+            // db.query(sql2, [orderId], function(err, result){
+            //     if (err) throw err;
+            //     var orderDetail = JSON.parse(JSON.stringify(result));
+            //     workflow.emit('response', order, orderDetail);
+            // });
         });
         workflow.on('response', (order, orderDetail) => {
             

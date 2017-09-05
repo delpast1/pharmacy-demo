@@ -10,7 +10,7 @@ var signin = (req, res) => {
     var token = [],
         data = {},
         role = '';
-
+   
     var workflow = new (require('events').EventEmitter)();
     workflow.on('validateParams', ()=> {
         if (!email){
@@ -40,57 +40,109 @@ var signin = (req, res) => {
     workflow.on('login', () => {
         var sql = "SELECT * FROM customers WHERE email = ?";
         //Find customer
-        db.query(sql,[email] ,function(err, result){
-            if (err) throw err
-            else  {
-                var customer=JSON.parse(JSON.stringify(result));
-
-                if (!customer[0]) {
-                     errors.push('Customer does not exist.'); 
-                } else {
-                    if (customer[0].password != password) {
-                        errors.push('Wrong password.');
+        db.getConnection((err, connection)=>{
+            connection.query(sql,[email] ,function(err, result){
+                connection.destroy();
+                if (err) throw err
+                else  {
+                    var customer=JSON.parse(JSON.stringify(result));
+    
+                    if (!customer[0]) {
+                         errors.push('Customer does not exist.'); 
                     } else {
-                        if (customer[0].email !== 'admin@pharmacy.com') {
-                            role = 'customer';
+                        if (customer[0].password != password) {
+                            errors.push('Wrong password.');
                         } else {
-                            role = 'admin';
+                            if (customer[0].email !== 'admin@pharmacy.com') {
+                                role = 'customer';
+                            } else {
+                                role = 'admin';
+                            }
+    
+                            data = {
+                                id: customer[0].id,
+                                email: customer[0].email,
+                                address: customer[0].address,
+                                fullname: customer[0].fullname,
+                                phonenumber: customer[0].phonenumber,
+                                role: role
+                            };
                         }
-
-                        data = {
-                            id: customer[0].id,
-                            email: customer[0].email,
-                            address: customer[0].address,
-                            fullname: customer[0].fullname,
-                            phonenumber: customer[0].phonenumber,
-                            role: role
-                        };
                     }
-                }
-            };
-
-            if ( errors.length !== 0 ) {
-                res.json({
-                    errors: errors,
-                    userInfo: data,
-                    token: token
-                });
-            } else {
-                var sign = {
-                    id: data.id,
-                    email: data.email,
-                    role: role
                 };
-                token.push(jwt.sign(sign, secret, {
-                    
-                }));
-                res.json({
-                    errors: errors,
-                    userInfo: data,
-                    token: token
-                });
-            }
+                if ( errors.length !== 0 ) {
+                    res.json({
+                        errors: errors,
+                        userInfo: data,
+                        token: token
+                    });
+                } else {
+                    var sign = {
+                        id: data.id,
+                        email: data.email,
+                        role: role
+                    };
+                    token.push(jwt.sign(sign, secret, {
+                        
+                    }));
+                    res.json({
+                        errors: errors,
+                        userInfo: data,
+                        token: token
+                    });
+                }
+            });
         });
+        // db.query(sql,[email] ,function(err, result){
+        //     if (err) throw err
+        //     else  {
+        //         var customer=JSON.parse(JSON.stringify(result));
+
+        //         if (!customer[0]) {
+        //              errors.push('Customer does not exist.'); 
+        //         } else {
+        //             if (customer[0].password != password) {
+        //                 errors.push('Wrong password.');
+        //             } else {
+        //                 if (customer[0].email !== 'admin@pharmacy.com') {
+        //                     role = 'customer';
+        //                 } else {
+        //                     role = 'admin';
+        //                 }
+
+        //                 data = {
+        //                     id: customer[0].id,
+        //                     email: customer[0].email,
+        //                     address: customer[0].address,
+        //                     fullname: customer[0].fullname,
+        //                     phonenumber: customer[0].phonenumber,
+        //                     role: role
+        //                 };
+        //             }
+        //         }
+        //     };
+        //     if ( errors.length !== 0 ) {
+        //         res.json({
+        //             errors: errors,
+        //             userInfo: data,
+        //             token: token
+        //         });
+        //     } else {
+        //         var sign = {
+        //             id: data.id,
+        //             email: data.email,
+        //             role: role
+        //         };
+        //         token.push(jwt.sign(sign, secret, {
+                    
+        //         }));
+        //         res.json({
+        //             errors: errors,
+        //             userInfo: data,
+        //             token: token
+        //         });
+        //     }
+        // });
     });
     workflow.emit('validateParams');
 };
@@ -142,52 +194,97 @@ var signUp = (req, res) => {
 
     workflow.on('checkExist', () => {
         var sql = "SELECT * FROM customers WHERE email = ?";
-        db.query(sql,[email] ,function(err, result){
-            if (err) throw err
-            else  {
-                var customer=JSON.parse(JSON.stringify(result));
-                if (customer[0]) {
-                    errors.push('Existed customer.')
-                    workflow.emit('errors', errors);
-                } else {
-                    workflow.emit('addCustomer');
+        db.getConnection((err, connection)=>{
+            connection.query(sql,[email] ,function(err, result){
+                connection.destroy();
+                if (err) throw err
+                else  {
+                    var customer=JSON.parse(JSON.stringify(result));
+                    if (customer[0]) {
+                        errors.push('Existed customer.')
+                        workflow.emit('errors', errors);
+                    } else {
+                        workflow.emit('addCustomer');
+                    }
                 }
-            }
+            });
         });
+        // db.query(sql,[email] ,function(err, result){
+        //     if (err) throw err
+        //     else  {
+        //         var customer=JSON.parse(JSON.stringify(result));
+        //         if (customer[0]) {
+        //             errors.push('Existed customer.')
+        //             workflow.emit('errors', errors);
+        //         } else {
+        //             workflow.emit('addCustomer');
+        //         }
+        //     }
+        // });
     });
 
     workflow.on('addCustomer', () => {
         var customers = [[email, password, address, fullname, phonenumber]];
         var sql = "INSERT INTO customers (email, password, address, fullname, phonenumber) VALUES ?";
-
-        db.query(sql, [customers], function(err, result) {
-            if (err) throw err;
-            
-            var customer=JSON.parse(JSON.stringify(result));
-            var sign = {
-                id: customer.insertId,
-                email: email,
-                role: 'customer'
-            };
-
-            data = {
-                // id: customer.insertId,
-                email: email,
-                address: address,
-                fullname: fullname,
-                phonenumber: phonenumber,
-                role: sign.role
-            };
-            token.push(jwt.sign(sign, secret, {
+        db.getConnection((err,connection) => {
+            connection.query(sql, [customers], function(err, result) {
+                connection.destroy();
+                if (err) throw err;
+                
+                var customer=JSON.parse(JSON.stringify(result));
+                var sign = {
+                    id: customer.insertId,
+                    email: email,
+                    role: 'customer'
+                };
     
-            }));
-
-            res.json({ 
-                errors: errors,
-                userInfo: data,
-                token: token
+                data = {
+                    // id: customer.insertId,
+                    email: email,
+                    address: address,
+                    fullname: fullname,
+                    phonenumber: phonenumber,
+                    role: sign.role
+                };
+                token.push(jwt.sign(sign, secret, {
+        
+                }));
+    
+                res.json({ 
+                    errors: errors,
+                    userInfo: data,
+                    token: token
+                });
             });
         });
+        // db.query(sql, [customers], function(err, result) {
+        //     if (err) throw err;
+            
+        //     var customer=JSON.parse(JSON.stringify(result));
+        //     var sign = {
+        //         id: customer.insertId,
+        //         email: email,
+        //         role: 'customer'
+        //     };
+
+        //     data = {
+        //         // id: customer.insertId,
+        //         email: email,
+        //         address: address,
+        //         fullname: fullname,
+        //         phonenumber: phonenumber,
+        //         role: sign.role
+        //     };
+        //     token.push(jwt.sign(sign, secret, {
+    
+        //     }));
+
+        //     res.json({ 
+        //         errors: errors,
+        //         userInfo: data,
+        //         token: token
+        //     });
+        // });
     });
     
     workflow.on('errors', (errors)=> {
@@ -202,38 +299,56 @@ var signUp = (req, res) => {
 };
 
 var listOfCustomers = (req, res) => {
-    // if (req.decoded.role === 'admin'){
         var sql = "SELECT * FROM customers";
-        db.query(sql, function(err, result){
-            if (err) throw err;
-            var customers=JSON.parse(JSON.stringify(result));
-            res.json({
-                listOfCustomers: customers
+        db.getConnection((err,connection) => {
+            connection.query(sql, function(err, result){
+                connection.destroy();
+                if (err) throw err;
+                var customers=JSON.parse(JSON.stringify(result));
+                res.json({
+                    listOfCustomers: customers
+                });
             });
         });
-    // } else {
-    //     res.json({
-    //         errors: ['You are not admin.']
-    //     });
-    // }
+        // db.query(sql, function(err, result){
+        //     if (err) throw err;
+        //     var customers=JSON.parse(JSON.stringify(result));
+        //     res.json({
+        //         listOfCustomers: customers
+        //     });
+        // });
 };
 
 var getInformation = (req,res) => {
     var id = req.decoded.id;
     var sql = "SELECT email, address, fullname, phonenumber FROM customers WHERE id = ?";
-
-    db.query(sql,[id], function(err, result){
-        if (err) throw err;
-        var customers=JSON.parse(JSON.stringify(result));
-        var errors = [];
-        if (!customers[0]) {
-            errors.push('Customer does not exist.'); 
-        }
-        res.json({
-            errors: errors,
-            customerInfo: customers[0]
-        })
+    db.getConnection((err, connection) => {
+        connection.query(sql,[id], function(err, result){
+            connection.destroy();
+            if (err) throw err;
+            var customers=JSON.parse(JSON.stringify(result));
+            var errors = [];
+            if (!customers[0]) {
+                errors.push('Customer does not exist.'); 
+            }
+            res.json({
+                errors: errors,
+                customerInfo: customers[0]
+            })
+        });
     });
+    // db.query(sql,[id], function(err, result){
+    //     if (err) throw err;
+    //     var customers=JSON.parse(JSON.stringify(result));
+    //     var errors = [];
+    //     if (!customers[0]) {
+    //         errors.push('Customer does not exist.'); 
+    //     }
+    //     res.json({
+    //         errors: errors,
+    //         customerInfo: customers[0]
+    //     })
+    // });
 }
 var updatePassword = (req, res) => {
         var id = req.decoded.id,
@@ -271,18 +386,30 @@ var updatePassword = (req, res) => {
 
         workflow.on('changePassword', ()=> {
             var sql = "UPDATE customers SET password = ? WHERE id = ? and password = ?";
-            
-            db.query(sql, [newPassword, id, currentPassword], function(err, result) {
-                if (err) throw err;
-                var customer=JSON.parse(JSON.stringify(result));
-                if (!customer.affectedRows) {
-                    errors.push('Current password is wrong');
-                };
-                res.json({
-                    errors: errors
+            db.getConnection((err, connection) => {
+                connection.query(sql, [newPassword, id, currentPassword], function(err, result) {
+                    connection.destroy();
+                    if (err) throw err;
+                    var customer=JSON.parse(JSON.stringify(result));
+                    if (!customer.affectedRows) {
+                        errors.push('Current password is wrong');
+                    };
+                    res.json({
+                        errors: errors
+                    });
                 });
-                
             });
+            // db.query(sql, [newPassword, id, currentPassword], function(err, result) {
+            //     if (err) throw err;
+            //     var customer=JSON.parse(JSON.stringify(result));
+            //     if (!customer.affectedRows) {
+            //         errors.push('Current password is wrong');
+            //     };
+            //     res.json({
+            //         errors: errors
+            //     });
+                
+            // });
         });
         workflow.emit('validateParams');
 };
@@ -324,17 +451,31 @@ var updatePersonalInfo = (req, res) => {
     });
     workflow.on('updateInfo', ()=> {
         var sql = "UPDATE customers SET address = ?, fullname = ?, phonenumber = ? WHERE id = ? and password = ?";
-        db.query(sql,[address, fullname, phonenumber, id, currentPassword], function(err, result){
-            if (err) throw err;
-            var customer=JSON.parse(JSON.stringify(result));
-            if (!customer.affectedRows) {
-                errors.push('Current password is wrong');
-            };
-                
-            res.json({
-                errors: errors
+        db.getConnection((err, connection) => {
+            connection.query(sql,[address, fullname, phonenumber, id, currentPassword], function(err, result){
+                connection.destroy();
+                if (err) throw err;
+                var customer=JSON.parse(JSON.stringify(result));
+                if (!customer.affectedRows) {
+                    errors.push('Current password is wrong');
+                };
+                    
+                res.json({
+                    errors: errors
+                });
             });
         });
+        // db.query(sql,[address, fullname, phonenumber, id, currentPassword], function(err, result){
+        //     if (err) throw err;
+        //     var customer=JSON.parse(JSON.stringify(result));
+        //     if (!customer.affectedRows) {
+        //         errors.push('Current password is wrong');
+        //     };
+                
+        //     res.json({
+        //         errors: errors
+        //     });
+        // });
     });
     workflow.emit('validateParams');
 };
