@@ -17,7 +17,7 @@ var newOrder = (req, res) => {
         if (!drugs.length) {
             errors.push('Order empty.');
         };
-        if (!date){
+        if (!dateOrder){
             errors.push('Date required.');
         }
         if (errors.length){
