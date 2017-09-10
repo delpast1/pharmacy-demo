@@ -33,18 +33,24 @@ var newOrder = (req, res) => {
             var sql = "SELECT * FROM drug where id = ?";
             var drug = drugs[i];
             // db.getConnection((err, connection) => {
-                db.query(sql, [drug.id], function(err,result){
+                db.query(sql, [drug.id, drug.quantity], function(err,result){
                     flat++;  
                     var length = drugs.length;
-                    // connection.destroy();
                     
+                    // connection.destroy();
                     if (err) throw err;
                     if (result.length !== 0) {
                         var trueDrug = JSON.parse(JSON.stringify(result));
-                        
+                        var quantity = 0;
+                        for(var j=0; j<length; j++) {
+                            if (drugs[j].id === trueDrug[0].id) {
+                                quantity = drugs[j].quantity;
+                                break;
+                            }
+                        }
                         orderDetail.push({
                             drugId: trueDrug[0].id,
-                            quantity: drug.quantity,
+                            quantity: quantity,
                             price: trueDrug[0].price
                         });
                     } else {
