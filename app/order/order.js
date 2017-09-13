@@ -5,13 +5,18 @@ var db = require('../config/index').db;
 var newOrder = (req, res) => {
     var customerId = req.decoded.id,
         drugs = req.body.drugs,
-        dateOrder = req.body.date;
+        dateOrder = req.body.date,
+        prescriptionID = req.body.prescriptionID;
 
     var date = new Date(dateOrder);
     var workflow = new (require('events').EventEmitter)();
     var errors = [];
     var orderDetail = [];
     var totalPrice = 0;
+    var listDrugs = [];
+    var flat = 0;
+    var totalPrice = 0;
+    var length = drugs.length;
 
     workflow.on('validateParams', ()=>{
         if (!drugs.length) {
@@ -20,80 +25,63 @@ var newOrder = (req, res) => {
         if (!dateOrder){
             errors.push('Date required.');
         }
+        if (!prescriptionID){
+            errors.push('Prescription ID required.');
+        }
         if (errors.length){
             workflow.emit('errors', errors);
         } else {
-            workflow.emit('checkOrder');
+            workflow.emit('checkPrescription');
         };
     });
 
-    workflow.on('checkOrder', () => {
-        var flat = 0;
-        for(var i = 0; i < drugs.length; i++){
-            var sql = "SELECT * FROM drug where id = ?";
-            var drug = drugs[i];
-            // db.getConnection((err, connection) => {
-                db.query(sql, [drug.id, drug.quantity], function(err,result){
-                    flat++;  
-                    var length = drugs.length;
-                    
-                    // connection.destroy();
-                    if (err) throw err;
-                    if (result.length !== 0) {
-                        var trueDrug = JSON.parse(JSON.stringify(result));
-                        var quantity = 0;
-                        for(var j=0; j<length; j++) {
-                            if (drugs[j].id === trueDrug[0].id) {
-                                quantity = drugs[j].quantity;
-                                break;
-                            }
-                        }
-                        orderDetail.push({
-                            drugId: trueDrug[0].id,
-                            quantity: quantity,
-                            price: trueDrug[0].price
+    workflow.on('checkPrescription', () => {
+        var sql = "SELECT accepted FROM `prescription` WHERE id = ?";
+        db.getConnection((err, connection) => {
+            connection.query(sql, [prescriptionID], function(err, result) {
+                connection.destroy();
+                if (err) throw err;
+                var results =  JSON.parse(JSON.stringify(result));
+                if (results.length === 0) {
+                    errors.push('This prescription is not available.');
+                } else if (results[0].accepted === 0) {
+                    errors.push('This prescription needs to be accepted.');
+                }
+                if (errors.length){
+                    workflow.emit('errors', errors);
+                } else {
+                    var sql = "SELECT id_drug as drugID FROM prescriptiondetail WHERE id_prescription = ?";
+                    db.getConnection((err, connection) => {
+                        connection.query(sql, [prescriptionID], function(err, result) {
+                            connection.destroy();
+                            if (err) throw err;
+                            listDrugs  = JSON.parse(JSON.stringify(result));    
+                            workflow.emit('checkOrder', listDrugs);
                         });
-                    } else {
-                        errors.push(flat-1);
-                    }
-                    if (flat === length) {
-                        if (errors.length !== 0){
-                            workflow.emit('errors', errors);
-                        } else {
-                            workflow.emit('addOrder');
-                        };
-                    }
-                });
-            // }); 
-            // setTimeout(()=> {console.log('check');}, 3000);
-            // db.query(sql, [drug.id, drugs.length], function(err,result){
-            //     flat++;
-            //     var length = drugs.length;
-            //     if (err) throw err;
-            //     if (result.length !== 0) {
-            //         var trueDrug = JSON.parse(JSON.stringify(result));
-
-            //         orderDetail.push({
-            //             drugId: trueDrug[0].id,
-            //             quantity: drug.quantity,
-            //             price: trueDrug[0].price
-            //         });
-            //     } else {
-            //         errors.push(flat-1);
-            //     }
-            //     if (flat === length) {
-            //         if (errors.length !== 0){
-            //             workflow.emit('errors', errors);
-            //         } else {
-            //             workflow.emit('addOrder');
-            //         };
-            //     }
-                
-            // });
-        };
-
-        
-        
+                    });
+                };
+            });
+        });
+    });
+    workflow.on('checkOrder', (listDrugs) => {
+        for (var i=0; i< drugs.length; i++) {
+            for(var j=0; j< listDrugs.length; j++) {
+                var check = false;
+                if (drugs[i].id === listDrugs[j].drugID) {
+                    check = true;
+                    break;
+                }
+            }
+            if (check === false) {
+                //trả lại id của những loại thuốc không có trong prescription
+                errors.push(drugs[i].id);
+            }
+        }
+        if (errors.length) {
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('addOrder');
+        }
     });
 
     workflow.on('errors', (errors)=> {
@@ -103,40 +91,46 @@ var newOrder = (req, res) => {
     });
 
     workflow.on('addOrder', () => {
-        var order = [[customerId, date, 0]];
-        var sql = "INSERT INTO drugorder (customer_id, date, total_price) VALUES ?";
+        var order = [[customerId, date, 0, prescriptionID]];
+        var sql = "INSERT INTO drugorder (customer_id, date, total_price, prescription_id) VALUES ?";
         db.getConnection((err, connection) => {
             connection.query(sql, [order], function(err, result) {
                 connection.destroy();
                 if (err) throw err;
                 var order = JSON.parse(JSON.stringify(result));
-                workflow.emit('addOrderDetail', order.insertId);
+                workflow.emit('orderDetail', order.insertId);
             });
         });
-        // db.query(sql, [order], function(err, result) {
-        //     if (err) throw err;
-        //     var order = JSON.parse(JSON.stringify(result));
-        //     workflow.emit('addOrderDetail', order.insertId);
-        // });
     });
 
-    workflow.on('addOrderDetail', (orderId) => {
-        for(var i=0; i < orderDetail.length; i++){
-            var sql = "INSERT INTO orderdetail (id_order, id_drug, quantity, unit_price) VALUES (?, ?, ?, ?)";
-            var detail = orderDetail[i];
-            totalPrice += detail.quantity*detail.price;
-            // db.getConnection((err, connection) => {
-            //     console.log(detail);
-                db.query(sql, [orderId, detail.drugId, detail.quantity, detail.price], function(err, result) {
-                    if (err) throw err;
-                });
-            // });
-            // db.query(sql, [orderId, detail.drugId, detail.quantity, detail.price], function(err, result) {
-            //     if (err) throw err;
-            // });
+    workflow.on('orderDetail', (orderId) => {
+        
+        for(var i=0; i < drugs.length; i++){
+            var drug = drugs[i];
+            workflow.emit('addOrderDetail',drug,orderId);
         };
-
-        workflow.emit('totalPrice', totalPrice, orderId);
+    });
+    
+    workflow.on('addOrderDetail', (drug, orderId)=>{
+        console.log('check');
+        var sql1 = "INSERT INTO orderdetail (id_order, id_drug, quantity, unit_price) VALUES (?, ?, ?, ?)";
+        var sql2 = "SELECT price FROM `drug` WHERE id = ?";
+        
+        db.getConnection((err, connection) => {
+            connection.query(sql2, [drug.id], function(err, result) {
+                if (err) throw err;
+                var results = JSON.parse(JSON.stringify(result));
+                totalPrice += drug.quantity*results[0].price;
+                connection.query(sql1, [orderId, drug.id, drug.quantity, result[0].price], function(err, result) {
+                    flat++;
+                    connection.destroy();
+                    if (err) throw err;
+                    if (flat === drugs.length) {
+                        workflow.emit('totalPrice', totalPrice, orderId);
+                    }
+                });
+            });
+        });
     });
 
     workflow.on('totalPrice', (totalPrice, orderId) => {
@@ -197,13 +191,6 @@ var getOrderHistory = (req, res) => {
             });
         });
     });
-    // db.query(sql,[customerId] , function(err, result){
-    //     if (err) throw err;
-    //     var drugorders=JSON.parse(JSON.stringify(result));
-    //     res.json({
-    //         allOrder: drugorders
-    //     });
-    // });
 }
 
 // for admin
@@ -351,5 +338,4 @@ exports = module.exports = {
     getDetailOfOrder: getDetailOfOrder,
     getOrderHistory: getOrderHistory,
     getDetailOfOrderByCustomer: getDetailOfOrderByCustomer
-
 }

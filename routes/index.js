@@ -6,6 +6,7 @@ const secret = require('../app/config/index').secret;
 var customer = require('../app/customer/index').customer;
 var drug = require('../app/drug/index').drug;
 var order = require('../app/order/index').order;
+var prescription = require('../app/prescription/index').prescription;
 
 var requireSession = (req, res, next) => {
     var token = req.body.token || req.query.token || req.headers['x-access-token'];
@@ -119,4 +120,8 @@ router.get('/admin/get-all-orders', [requireAdmin, order.getAllOrders]);
 
 //----------------------------------------------------------------
 //Router
+router.post('/new-prescription', [requireCustomer, prescription.newPrescription]);
+router.post('/admin/accept-prescription', [requireAdmin, prescription.acceptPrescription]);
+router.get('/get-list-prescriptions', [requireCustomer, prescription.getPrescriptions]);
+router.get('/get-all-prescriptions', [requireAdmin, prescription.getAllPrescriptions]);
 module.exports = router;
