@@ -223,8 +223,11 @@ var getPrescriptionDetail = (req, res) => {
                         if (err) throw err;
                         var prescriptionDetail = JSON.parse(JSON.stringify(result));
                         res.json({
-                            prescriptions: prescription,
-                            prescriptionsDetail: prescriptionDetail
+                            id: prescription[0].id,
+                            customerId: prescription[0].customerId,
+                            date: prescription[0].date,
+                            status: prescription[0].status,
+                            drugs: prescriptionDetail
                         });
                     });
                 }
