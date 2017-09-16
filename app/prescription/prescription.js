@@ -62,7 +62,7 @@ var newPrescription = (req, res) => {
 
     workflow.on('addPrescription', () => {
         var prescription = [[customerId, date, 0]];
-        var sql = "INSERT INTO prescription (customer_id, date, accepted) VALUES ?";
+        var sql = "INSERT INTO prescription (customer_id, date, status) VALUES ?";
         db.getConnection((err, connection) => {
             connection.query(sql, [prescription], function(err, result) {
                 connection.destroy();
@@ -118,7 +118,7 @@ var acceptPrescription = (req, res) => {
     });
 
     workflow.on('acceptPrescription', () => {
-        var sql = "UPDATE prescription SET accepted = 1 WHERE id = ?";
+        var sql = "UPDATE prescription SET status = 1 WHERE id = ?";
         db.getConnection((err, connection) => {
             connection.query(sql, [prescriptionID], function(err, result) {
                 connection.destroy();
@@ -131,6 +131,152 @@ var acceptPrescription = (req, res) => {
                 } else {
                     errors.push('This prescription is not available.');
                     workflow.emit('errors', errors);
+                }
+            });
+        });
+    });
+
+    workflow.emit('validateParams');
+}
+
+var rejectPrescription = (req, res) => {
+    var prescriptionID = req.body.prescriptionID;
+    var workflow = new (require('events').EventEmitter)();
+    var errors = [];
+
+    workflow.on('validateParams', ()=>{
+        if (!prescriptionID){
+            errors.push('Prescription ID required.');
+        }
+        if (errors.length){
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('rejectPrescription');
+        };
+    });
+
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
+    });
+
+    workflow.on('rejectPrescription', () => {
+        var sql = "UPDATE prescription SET status = 2 WHERE id = ?";
+        db.getConnection((err, connection) => {
+            connection.query(sql, [prescriptionID], function(err, result) {
+                connection.destroy();
+                if (err) throw err;
+                var prescription = JSON.parse(JSON.stringify(result));
+                if (prescription.affectedRows !== 0 ) {
+                    res.json({
+                        errors: errors
+                    });
+                } else {
+                    errors.push('This prescription is not available.');
+                    workflow.emit('errors', errors);
+                }
+            });
+        });
+    });
+
+    workflow.emit('validateParams');
+}
+
+var getPrescriptionDetail = (req, res) => {
+    var customerId = req.decoded.id;
+    var prescriptionId = req.body.prescriptionID;
+
+    var workflow = new (require('events').EventEmitter)();
+    var errors = [];
+
+    workflow.on('validateParams', ()=>{
+        if (!prescriptionId){
+            errors.push('Prescription ID required.');
+        }
+        if (errors.length){
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('getPrescription');
+        };
+    });
+
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
+    });
+
+    workflow.on('getPrescription', () => {
+        var sql = "SELECT id, customer_id as customerId, date, status FROM prescription WHERE customer_id = ? AND id = ?";
+        db.getConnection((err, connection) => {
+            connection.query(sql,[customerId, prescriptionId] , function(err, result){
+                if (err) throw err;
+                var prescription = JSON.parse(JSON.stringify(result));
+                if (prescription.length === 0){
+                    errors.push('This is not your prescription.');
+                    workflow.emit('errors', errors);
+                } else {
+                    var sql2 = "SELECT id_drug as DrugID FROM prescriptiondetail WHERE id_prescription = ?";
+                    connection.query(sql2, [prescriptionId], (err, result) => {
+                        connection.destroy();
+                        if (err) throw err;
+                        var prescriptionDetail = JSON.parse(JSON.stringify(result));
+                        res.json({
+                            prescriptions: prescription,
+                            prescriptionsDetail: prescriptionDetail
+                        });
+                    });
+                }
+            });
+        });
+    });
+
+    workflow.emit('validateParams');
+}
+var getPrescriptionDetailAdmin = (req, res) => {
+    var prescriptionId = req.body.prescriptionID;
+
+    var workflow = new (require('events').EventEmitter)();
+    var errors = [];
+
+    workflow.on('validateParams', ()=>{
+        if (!prescriptionId){
+            errors.push('Prescription ID required.');
+        }
+        if (errors.length){
+            workflow.emit('errors', errors);
+        } else {
+            workflow.emit('getPrescription');
+        };
+    });
+
+    workflow.on('errors', (errors)=> {
+        res.json({ 
+            errors: errors
+        });
+    });
+
+    workflow.on('getPrescription', () => {
+        var sql = "SELECT id, customer_id as customerId, date, status FROM prescription WHERE id = ?";
+        db.getConnection((err, connection) => {
+            connection.query(sql,[prescriptionId] , function(err, result){
+                if (err) throw err;
+                var prescription = JSON.parse(JSON.stringify(result));
+                if (prescription.length === 0){
+                    errors.push('This prescription is not availble.');
+                    workflow.emit('errors', errors);
+                } else {
+                    var sql2 = "SELECT id_drug as DrugID FROM prescriptiondetail WHERE id_prescription = ?";
+                    connection.query(sql2, [prescriptionId], (err, result) => {
+                        connection.destroy();
+                        if (err) throw err;
+                        var prescriptionDetail = JSON.parse(JSON.stringify(result));
+                        res.json({
+                            prescriptions: prescription,
+                            prescriptionsDetail: prescriptionDetail
+                        });
+                    });
                 }
             });
         });
@@ -170,6 +316,9 @@ var getAllPrescriptions = (req, res) => {
 exports = module.exports = {
     newPrescription: newPrescription,
     acceptPrescription: acceptPrescription,
+    rejectPrescription: rejectPrescription,
     getPrescriptions: getPrescriptions,
-    getAllPrescriptions: getAllPrescriptions
+    getAllPrescriptions: getAllPrescriptions,
+    getPrescriptionDetail: getPrescriptionDetail,
+    getPrescriptionDetailAdmin: getPrescriptionDetailAdmin
 }

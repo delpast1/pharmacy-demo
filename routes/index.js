@@ -103,7 +103,11 @@ router.post('/get-drug', [drug.getDrug]);
 router.post('/new-order', [requireCustomer, order.newOrder]);
 router.get('/get-order-history', [requireCustomer, order.getOrderHistory]);
 router.post('/get-detail-order', [requireCustomer, order.getDetailOfOrderByCustomer]);
-
+    // Prescription
+router.post('/new-prescription', [requireCustomer, prescription.newPrescription]);
+router.get('/get-list-prescriptions', [requireCustomer, prescription.getPrescriptions]);
+router.post('/new-prescription', [requireCustomer, prescription.newPrescription]);
+router.post('/get-prescription-detail', [requireCustomer, prescription.getPrescriptionDetail]);
 //----------------------------------------------------------------
 
 //Router for Admin
@@ -117,11 +121,13 @@ router.post('/admin/delete-drug', [requireAdmin, drug.deleteDrug]);
     //Order
 router.post('/admin/get-order', [requireAdmin, order.getDetailOfOrder]);
 router.get('/admin/get-all-orders', [requireAdmin, order.getAllOrders]);
+    //Prescription
+router.get('/admin/get-all-prescriptions', [requireAdmin, prescription.getAllPrescriptions]);
+router.post('/admin/accept-prescription', [requireAdmin, prescription.acceptPrescription]);
+router.post('/admin/reject-prescription', [requireAdmin, prescription.rejectPrescription]);
+router.post('/admin/get-prescription-detail', [requireAdmin, prescription.getPrescriptionDetailAdmin]);
 
 //----------------------------------------------------------------
-//Router
-router.post('/new-prescription', [requireCustomer, prescription.newPrescription]);
-router.post('/admin/accept-prescription', [requireAdmin, prescription.acceptPrescription]);
-router.get('/get-list-prescriptions', [requireCustomer, prescription.getPrescriptions]);
-router.get('/get-all-prescriptions', [requireAdmin, prescription.getAllPrescriptions]);
+
+
 module.exports = router;
