@@ -36,7 +36,7 @@ var newOrder = (req, res) => {
     });
 
     workflow.on('checkPrescription', () => {
-        var sql = "SELECT accepted FROM `prescription` WHERE id = ?";
+        var sql = "SELECT status FROM `prescription` WHERE id = ?";
         db.getConnection((err, connection) => {
             connection.query(sql, [prescriptionID], function(err, result) {
                 connection.destroy();
@@ -44,8 +44,10 @@ var newOrder = (req, res) => {
                 var results =  JSON.parse(JSON.stringify(result));
                 if (results.length === 0) {
                     errors.push('This prescription is not available.');
-                } else if (results[0].accepted === 0) {
+                } else if (results[0].status === 0) {
                     errors.push('This prescription needs to be accepted.');
+                } else if (results[0].status === 2){
+                    errors.push('This prescription has been rejected.');
                 }
                 if (errors.length){
                     workflow.emit('errors', errors);
