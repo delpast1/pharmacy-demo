@@ -619,9 +619,6 @@ CREATE TABLE `prescriptiondetail` (
 --
 -- Chỉ mục cho bảng `customers`
 --
-ALTER TABLE `customers`
-  ADD PRIMARY KEY (`id`);
-
 --
 -- Chỉ mục cho bảng `drug`
 --
