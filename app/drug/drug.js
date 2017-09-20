@@ -7,7 +7,6 @@ var getDrug = (req,res) => {
     if (!drugId) {
         res.json({
             errors: ['ID of Drug is required.'],
-            drug: []
         });
     } else {
         var sql = "SELECT * FROM drug WHERE id = ?";
@@ -19,11 +18,14 @@ var getDrug = (req,res) => {
                 var errors = [];
                 if (!drug[0]) {
                     errors.push('Drug does not exist.'); 
+                    res.json({
+                        errors: errors
+                    });
+                } else {
+                    res.json({
+                        drug: drug[0]
+                    });
                 }
-                res.json({
-                    errors: errors,
-                    drug: drug[0]
-                });
             });
         });
     }
@@ -53,13 +55,7 @@ var getListOfDrug = (req, res) => {
 
 // 
 var addDrug = (req, res) => {
-    var name = req.body.name,
-        instructions = req.body.instructions,
-        formula = req.body.formula,
-        contraindication = req.body.contraindication,
-        sideEffect = req.body.sideEffect,
-        howToUse = req.body.howToUse,
-        price = req.body.price;
+    var name = req.body.name;
     
     var workflow = new (require('events').EventEmitter)();
     var errors = [];
@@ -67,24 +63,6 @@ var addDrug = (req, res) => {
     workflow.on('validateParams', ()=>{
         if (!name){
             errors.push('Name required');
-        }
-        if (!instructions){
-            errors.push('Instructions required');
-        };
-        if (!formula){
-            errors.push('Formula required');
-        };
-        if (!contraindication){
-            errors.push('Contraindication required');
-        };
-        if (!sideEffect){
-            errors.push('Side effect required');
-        };
-        if (!howToUse){
-            errors.push('How To Use required');
-        };
-        if (!price){
-            errors.push('Price required');
         };
 
         if (errors.length){
@@ -101,24 +79,17 @@ var addDrug = (req, res) => {
     });
 
     workflow.on('addDrug', () => {
-        var drug = [[name, instructions, formula, contraindication, sideEffect, howToUse, price]];
-        var sql = "INSERT INTO drug (name, instructions, formula, contraindication, side_effect, how_to_use,"+
-        " price) VALUES ?";
+        var drug = [[name]];
+        var sql = "INSERT INTO drug (name) VALUES ?";
         db.getConnection((err, connection) => {
             connection.query(sql, [drug], function(err, result) {
                 connection.destroy();
                 if (err) throw err;
                 res.json({ 
-                    errors: err
+                    errors: errors
                 });
             });
         });
-        // db.query(sql, [drug], function(err, result) {
-        //     if (err) throw err;
-        //     res.json({ 
-        //         errors: err
-        //     });
-        // });
     });
 
     workflow.emit('validateParams');
@@ -127,13 +98,7 @@ var addDrug = (req, res) => {
 // 
 var updateDrug = (req, res) => {
     var drugId = req.body.drugId,
-        name = req.body.name,
-        instructions = req.body.instructions,
-        formula = req.body.formula,
-        contraindication = req.body.contraindication,
-        sideEffect = req.body.sideEffect,
-        howToUse = req.body.howToUse,
-        price = req.body.price;
+        name = req.body.name;
 
     var workflow = new (require('events').EventEmitter)();
     var errors = [];
@@ -144,24 +109,6 @@ var updateDrug = (req, res) => {
         }
         if (!name){
             errors.push('Name required');
-        };
-        if (!instructions){
-            errors.push('Instructions required');
-        };
-        if (!formula){
-            errors.push('Formula required');
-        };
-        if (!contraindication){
-            errors.push('Contraindication required');
-        };
-        if (!sideEffect){
-            errors.push('Side effect required');
-        };
-        if (!howToUse){
-            errors.push('How To Use required');
-        };
-        if (!price){
-            errors.push('Price required');
         };
         if (errors.length){
             workflow.emit('errors', errors);
@@ -176,10 +123,9 @@ var updateDrug = (req, res) => {
         });
     });
     workflow.on('updateDrug', ()=> {
-        var sql = "UPDATE drug SET name = ?, instructions = ?, formula = ?, contraindication = ?,"+
-        " side_effect = ?, how_to_use = ?, price = ? WHERE id = ?";
+        var sql = "UPDATE drug SET name = ? WHERE id = ?";
         db.getConnection((err, connection) =>{
-            connection.query(sql,[name, instructions, formula, contraindication, sideEffect, howToUse, price, drugId], function(err, result){
+            connection.query(sql,[name, drugId], function(err, result){
                 connection.destroy();
                 if (err) throw err;
                 var drug=JSON.parse(JSON.stringify(result));
@@ -192,17 +138,6 @@ var updateDrug = (req, res) => {
                 });
             });
         });
-        // db.query(sql,[name, instructions, formula, contraindication, sideEffect, howToUse, price, drugId], function(err, result){
-        //     if (err) throw err;
-        //     var drug=JSON.parse(JSON.stringify(result));
-        //     if (!drug.affectedRows) {
-        //         errors.push('Drug is not defined.')
-        //     };
-                
-        //     res.json({
-        //         errors: errors
-        //     });
-        // });
     });
     workflow.emit('validateParams');
 };

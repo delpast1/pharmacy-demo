@@ -12,11 +12,9 @@ var newOrder = (req, res) => {
     var workflow = new (require('events').EventEmitter)();
     var errors = [];
     var orderDetail = [];
-    var totalPrice = 0;
     var listDrugs = [];
-    var flat = 0;
-    var totalPrice = 0;
     var length = drugs.length;
+    var flat = 0;
 
     workflow.on('validateParams', ()=>{
         if (!drugs.length) {
@@ -93,8 +91,8 @@ var newOrder = (req, res) => {
     });
 
     workflow.on('addOrder', () => {
-        var order = [[customerId, date, 0, prescriptionID]];
-        var sql = "INSERT INTO drugorder (customer_id, date, total_price, prescription_id) VALUES ?";
+        var order = [[customerId, date, prescriptionID]];
+        var sql = "INSERT INTO drugorder (customer_id, date, prescription_id) VALUES ?";
         db.getConnection((err, connection) => {
             connection.query(sql, [order], function(err, result) {
                 connection.destroy();
@@ -106,7 +104,6 @@ var newOrder = (req, res) => {
     });
 
     workflow.on('orderDetail', (orderId) => {
-        
         for(var i=0; i < drugs.length; i++){
             var drug = drugs[i];
             workflow.emit('addOrderDetail',drug,orderId);
@@ -114,46 +111,20 @@ var newOrder = (req, res) => {
     });
     
     workflow.on('addOrderDetail', (drug, orderId)=>{
-        console.log('check');
-        var sql1 = "INSERT INTO orderdetail (id_order, id_drug, quantity, unit_price) VALUES (?, ?, ?, ?)";
-        var sql2 = "SELECT price FROM `drug` WHERE id = ?";
-        
+        var sql1 = "INSERT INTO orderdetail (id_order, id_drug, quantity) VALUES (?, ?, ?)";
         db.getConnection((err, connection) => {
-            connection.query(sql2, [drug.id], function(err, result) {
-                if (err) throw err;
-                var results = JSON.parse(JSON.stringify(result));
-                totalPrice += drug.quantity*results[0].price;
-                connection.query(sql1, [orderId, drug.id, drug.quantity, result[0].price], function(err, result) {
-                    flat++;
-                    connection.destroy();
-                    if (err) throw err;
-                    if (flat === drugs.length) {
-                        workflow.emit('totalPrice', totalPrice, orderId);
-                    }
-                });
-            });
-        });
-    });
-
-    workflow.on('totalPrice', (totalPrice, orderId) => {
-        var sql = "UPDATE drugorder SET total_price = ? WHERE id = ?";
-        db.getConnection((err, connection) => {
-            connection.query(sql, [totalPrice, orderId], function(err, result){
+            connection.query(sql1, [orderId, drug.id, drug.quantity], function(err, result) {
                 connection.destroy();
+                flat++;
                 if (err) throw err;
-                res.json({
-                    errors: errors
-                });
+                if (flat === drugs.length) {
+                    res.json({
+                        errors: errors
+                    });
+                }
             });
         });
-        // db.query(sql, [totalPrice, orderId], function(err, result){
-        //     if (err) throw err;
-        //     res.json({
-        //         errors: errors
-        //     });
-        // });
-    });
-    
+    });    
     workflow.emit('validateParams');
 }
 
@@ -206,7 +177,8 @@ var getDetailOfOrder = (req, res) => {
         });
     } else {
         var sql = "SELECT * FROM drugorder WHERE id = ?";
-        var sql2 = "SELECT id_drug, quantity, unit_price FROM orderdetail WHERE id_order = ?";
+        var sql2 = "SELECT A.id, A.name, B.quantity FROM drug A INNER JOIN orderdetail B ON A.id = B.id_drug"+
+            " WHERE B.id_order = ?";
 
         workflow.on('getOrder', () => {
             db.getConnection((err, connection) => {
@@ -223,18 +195,8 @@ var getDetailOfOrder = (req, res) => {
                     }  
                 });
             });
-            // db.query(sql, [orderId], function(err, result){
-            //     if (err) throw err;
-            //     var order = JSON.parse(JSON.stringify(result));
-            //     if (!order[0]) {
-            //         res.json({
-            //             errors: ['This order is not defined.']
-            //         })
-            //     } else {
-            //         workflow.emit('getOrderDetail', order);
-            //     }  
-            // });
         });
+
         workflow.on('getOrderDetail', (order) => {
             db.getConnection((err, connection) => {
                 connection.query(sql2, [orderId], function(err, result){
@@ -244,19 +206,14 @@ var getDetailOfOrder = (req, res) => {
                     workflow.emit('response', order, orderDetail);
                 });
             });
-            // db.query(sql2, [orderId], function(err, result){
-            //     if (err) throw err;
-            //     var orderDetail = JSON.parse(JSON.stringify(result));
-            //     workflow.emit('response', order, orderDetail);
-            // });
         });
+
         workflow.on('response', (order, orderDetail) => {
             
             res.json({
                 orderNumber: order[0].id,
                 customerId: order[0].customer_id,
                 date: order[0].date.toString(),
-                totalPrice: order[0].total_price,
                 drugs: orderDetail
             })
         });
@@ -275,7 +232,8 @@ var getDetailOfOrderByCustomer = (req, res) => {
         });
     } else {
         var sql = "SELECT * FROM drugorder WHERE id = ? and customer_id = ?";
-        var sql2 = "SELECT id_drug, quantity, unit_price FROM orderdetail WHERE id_order = ?";
+        var sql2 = "SELECT A.id, A.name, B.quantity FROM drug A INNER JOIN orderdetail B ON A.id = B.id_drug"+
+            " WHERE B.id_order = ?";
 
         workflow.on('getOrder', () => {
             db.getConnection((err, connection) => {
@@ -292,17 +250,6 @@ var getDetailOfOrderByCustomer = (req, res) => {
                     }  
                 });
             });
-            // db.query(sql, [orderId, customerId], function(err, result){
-            //     if (err) throw err;
-            //     var order = JSON.parse(JSON.stringify(result));
-            //     if (!order[0]) {
-            //         res.json({
-            //             errors: ['This is not your order.']
-            //         })
-            //     } else {
-            //         workflow.emit('getOrderDetail', order);
-            //     }  
-            // });
         });
         workflow.on('getOrderDetail', (order) => {
             db.getConnection((err, connection) => {
@@ -313,11 +260,6 @@ var getDetailOfOrderByCustomer = (req, res) => {
                     workflow.emit('response', order, orderDetail);
                 });
             });
-            // db.query(sql2, [orderId], function(err, result){
-            //     if (err) throw err;
-            //     var orderDetail = JSON.parse(JSON.stringify(result));
-            //     workflow.emit('response', order, orderDetail);
-            // });
         });
         workflow.on('response', (order, orderDetail) => {
             

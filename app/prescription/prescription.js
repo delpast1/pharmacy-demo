@@ -217,7 +217,8 @@ var getPrescriptionDetail = (req, res) => {
                     errors.push('This is not your prescription.');
                     workflow.emit('errors', errors);
                 } else {
-                    var sql2 = "SELECT id_drug as DrugID FROM prescriptiondetail WHERE id_prescription = ?";
+                    var sql2 = "SELECT B.id, B.name FROM prescriptiondetail A INNER JOIN drug B ON A.id_drug = B.id"+
+                        " WHERE A.id_prescription = ?";
                     connection.query(sql2, [prescriptionId], (err, result) => {
                         connection.destroy();
                         if (err) throw err;
