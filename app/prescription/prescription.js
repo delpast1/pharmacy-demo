@@ -4,7 +4,8 @@ var db = require('../config/index').db;
 var newPrescription = (req, res) => {
     var customerId = req.decoded.id,
         drugs = req.body.drugs,
-        date = req.body.date;
+        date = req.body.date,
+        name = req.body.name;
 
     var date = new Date(date);
     var workflow = new (require('events').EventEmitter)();
@@ -17,7 +18,10 @@ var newPrescription = (req, res) => {
         };
         if (!date){
             errors.push('Date required.');
-        }
+        };
+        if (!name){
+            errors.push('Date required.');
+        };
         if (errors.length){
             workflow.emit('errors', errors);
         } else {
@@ -61,8 +65,8 @@ var newPrescription = (req, res) => {
     });
 
     workflow.on('addPrescription', () => {
-        var prescription = [[customerId, date, 0]];
-        var sql = "INSERT INTO prescription (customer_id, date, status) VALUES ?";
+        var prescription = [[customerId, date, 0, name]];
+        var sql = "INSERT INTO prescription (customer_id, date, status, name) VALUES ?";
         db.getConnection((err, connection) => {
             connection.query(sql, [prescription], function(err, result) {
                 connection.destroy();
@@ -208,7 +212,7 @@ var getPrescriptionDetail = (req, res) => {
     });
 
     workflow.on('getPrescription', () => {
-        var sql = "SELECT id, customer_id as customerId, date, status FROM prescription WHERE customer_id = ? AND id = ?";
+        var sql = "SELECT id, customer_id as customerId, date, status, name FROM prescription WHERE customer_id = ? AND id = ?";
         db.getConnection((err, connection) => {
             connection.query(sql,[customerId, prescriptionId] , function(err, result){
                 if (err) throw err;
@@ -225,6 +229,7 @@ var getPrescriptionDetail = (req, res) => {
                         var prescriptionDetail = JSON.parse(JSON.stringify(result));
                         res.json({
                             id: prescription[0].id,
+                            name: prescription[0].name,
                             customerId: prescription[0].customerId,
                             date: prescription[0].date,
                             status: prescription[0].status,
@@ -262,7 +267,7 @@ var getPrescriptionDetailAdmin = (req, res) => {
     });
 
     workflow.on('getPrescription', () => {
-        var sql = "SELECT id, customer_id as customerId, date, status FROM prescription WHERE id = ?";
+        var sql = "SELECT id, customer_id as customerId, date, status, name FROM prescription WHERE id = ?";
         db.getConnection((err, connection) => {
             connection.query(sql,[prescriptionId] , function(err, result){
                 if (err) throw err;
@@ -278,6 +283,7 @@ var getPrescriptionDetailAdmin = (req, res) => {
                         var prescriptionDetail = JSON.parse(JSON.stringify(result));
                         res.json({
                             id: prescription[0].id,
+                            name: prescription[0].name,
                             customerId: prescription[0].customerId,
                             date: prescription[0].date,
                             status: prescription[0].status,

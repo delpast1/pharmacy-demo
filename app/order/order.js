@@ -211,7 +211,7 @@ var getDetailOfOrder = (req, res) => {
         workflow.on('response', (order, orderDetail) => {
             
             res.json({
-                orderNumber: order[0].id,
+                id: order[0].id,
                 customerId: order[0].customer_id,
                 date: order[0].date.toString(),
                 drugs: orderDetail
@@ -264,10 +264,9 @@ var getDetailOfOrderByCustomer = (req, res) => {
         workflow.on('response', (order, orderDetail) => {
             
             res.json({
-                orderNumber: order[0].id,
+                id: order[0].id,
                 customerId: order[0].customer_id,
                 date: order[0].date.toString(),
-                totalPrice: order[0].total_price,
                 drugs: orderDetail
             })
         });
