@@ -94,38 +94,37 @@ router.get('/', function(req, res, next) {
     //customer table
 router.post('/signin', customer.signin);
 router.post('/signup', customer.signUp);
-router.post('/change-password', [requireSession, customer.updatePassword]);
-router.post('/update-peronal-info', [requireSession, customer.updatePersonalInfo]);
-router.get('/get-information', [requireSession, customer.getInformation]);
+router.post('/changePassword', [requireSession, customer.updatePassword]);
+router.post('/updatePeronalInfo', [requireSession, customer.updatePersonalInfo]);
+router.get('/getInformation', [requireSession, customer.getInformation]);
     //drug table
-router.post('/get-drug', [drug.getDrug]);
+router.post('/getDrug', [drug.getDrug]);
     // Order
-router.post('/new-order', [requireCustomer, order.newOrder]);
-router.get('/get-order-history', [requireCustomer, order.getOrderHistory]);
-router.post('/get-detail-order', [requireCustomer, order.getDetailOfOrderByCustomer]);
+router.post('/newOrder', [requireCustomer, order.newOrder]);
+router.get('/getOrderHistory', [requireCustomer, order.getOrderHistory]);
+router.post('/getDetailOrder', [requireCustomer, order.getDetailOfOrderByCustomer]);
     // Prescription
-router.post('/new-prescription', [requireCustomer, prescription.newPrescription]);
-router.get('/get-list-prescriptions', [requireCustomer, prescription.getPrescriptions]);
-router.post('/new-prescription', [requireCustomer, prescription.newPrescription]);
-router.post('/get-prescription-detail', [requireCustomer, prescription.getPrescriptionDetail]);
+router.post('/newPrescription', [requireCustomer, prescription.newPrescription]);
+router.get('/getListPrescriptions', [requireCustomer, prescription.getPrescriptions]);
+router.post('/getPrescriptionDetail', [requireCustomer, prescription.getPrescriptionDetail]);
 //----------------------------------------------------------------
 
 //Router for Admin
     // customers table
 router.get('/admin/listOfCustomers', [requireAdmin, customer.listOfCustomers]);
     // drug table
-router.get('/list-of-drug', [drug.getListOfDrug]);
-router.post('/admin/add-new-drug', [requireAdmin, drug.addDrug]);
-router.post('/admin/update-drug', [requireAdmin, drug.updateDrug]);
-router.post('/admin/delete-drug', [requireAdmin, drug.deleteDrug]);
+router.get('/listOfDrug', [drug.getListOfDrug]);
+router.post('/admin/addNewDrug', [requireAdmin, drug.addDrug]);
+router.post('/admin/updateDrug', [requireAdmin, drug.updateDrug]);
+router.post('/admin/deleteDrug', [requireAdmin, drug.deleteDrug]);
     //Order
-router.post('/admin/get-order', [requireAdmin, order.getDetailOfOrder]);
-router.get('/admin/get-all-orders', [requireAdmin, order.getAllOrders]);
+router.post('/admin/getOrder', [requireAdmin, order.getDetailOfOrder]);
+router.get('/admin/getAllOrders', [requireAdmin, order.getAllOrders]);
     //Prescription
-router.get('/admin/get-all-prescriptions', [requireAdmin, prescription.getAllPrescriptions]);
-router.post('/admin/accept-prescription', [requireAdmin, prescription.acceptPrescription]);
-router.post('/admin/reject-prescription', [requireAdmin, prescription.rejectPrescription]);
-router.post('/admin/get-prescription-detail', [requireAdmin, prescription.getPrescriptionDetailAdmin]);
+router.get('/admin/getAllPrescriptions', [requireAdmin, prescription.getAllPrescriptions]);
+router.post('/admin/acceptPrescription', [requireAdmin, prescription.acceptPrescription]);
+router.post('/admin/rejectPrescription', [requireAdmin, prescription.rejectPrescription]);
+router.post('/admin/getPrescriptionDetail', [requireAdmin, prescription.getPrescriptionDetailAdmin]);
 
 //----------------------------------------------------------------
 
