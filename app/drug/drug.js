@@ -169,11 +169,29 @@ var deleteDrug = (req, res) => {
     }
 }
 
+//
+var searching = (req,res) => {
+    var nameDrug = req.body.nameDrug;
+    var sql = "SELECT * FROM drug WHERE ( name LIKE '% "+nameDrug+"%' or name LIKE '"+nameDrug+"%') LIMIT 10";
+    db.getConnection((err, connection) => {
+        connection.query(sql, function(err, results) {
+            connection.destroy();
+            if (err) {
+                res.json({
+                    errors: err
+                });
+            }
+            res.json(results);
+        });
+    })
+
+}
+
 exports = module.exports = {
     getDrug: getDrug,
     getListOfDrug: getListOfDrug,
     addDrug: addDrug,
     updateDrug: updateDrug,
-    deleteDrug: deleteDrug
-
+    deleteDrug: deleteDrug,
+    searching: searching
 }

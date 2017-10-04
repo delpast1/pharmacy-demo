@@ -82,9 +82,7 @@ var signin = (req, res) => {
                         email: data.email,
                         role: role
                     };
-                    token.push(jwt.sign(sign, secret, {
-                        
-                    }));
+                    token.push(jwt.sign(sign, secret, {}));
                     res.json({
                         errors: errors,
                         userInfo: data,

@@ -113,6 +113,7 @@ router.post('/getPrescriptionDetail', [requireCustomer, prescription.getPrescrip
     // customers table
 router.get('/admin/listOfCustomers', [requireAdmin, customer.listOfCustomers]);
     // drug table
+router.post('/searching', drug.searching);
 router.get('/listOfDrug', [drug.getListOfDrug]);
 router.post('/admin/addNewDrug', [requireAdmin, drug.addDrug]);
 router.post('/admin/updateDrug', [requireAdmin, drug.updateDrug]);
